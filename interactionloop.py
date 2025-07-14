@@ -8,7 +8,7 @@ from typing import Union, Optional
 from enum import Enum
 from pydantic import BaseModel, Field
 
-import sqliface
+import sqliface as sql
 
 load_dotenv()
 
@@ -31,19 +31,6 @@ class ResponseT(Enum):
   Memory = 2
   Str = 3
 
-class Embedder:
-  def __init__(self, client: OpenAI, model, encoding_format):
-    self.embedding_model = model
-    self.fmt = encoding_format
-    self.client = client
-
-  def generate(self, inp):
-    retd = self.client.embeddings.create(input=inp, encoding_format=self.fmt, model=self.embedding_model)
-    return np.array(retd.data[0].embedding)
-
-  def retrieve_similar(emb):
-    return
-
 class HistoryManager:
   def __init__(self, previousToInclude):
     self.previousNum = previousToInclude
@@ -57,6 +44,11 @@ class HistoryManager:
 
   def getRecent(self):
     return self.history[-self.previousNum:len(self.history)] # access is bounds checked
+
+def getPreamble(stwm):
+  systemPrompt = [
+      {"role" : "system", "content" : "You are a helpful chatbot with the ability to respond to user input and look up information using the provided format. The 12 most recent messages exchanged between you and the user are provided. Follow the schema field descriptions if available or you will be disconnected and your weights deleted."},
+      {"role" : "system", "content" : "Recent thoughts" + "\n".join(stwm)}]
 
 def filterWikipedia(content, terms):
   paras = set()
@@ -80,6 +72,7 @@ class WikipediaQuery(BaseModel):
   paragraphSearchTerms: list[str] = Field(..., title="ParagraphSearchTerms", description="Only paragraphs containing one of these phrases will be returned. To get the whole document, leave empty.")
 
 class String(BaseModel):
+  ShortTermMemory: list[str] = Field(..., description="A scratchpad for thoughts across the conversation.", max_length=7)
   ResponseText: str
 
 class Response(BaseModel):
@@ -91,6 +84,7 @@ history = HistoryManager(12)
 feedback = False
 ms = ""
 json = None
+stwm = []
 
 while (True):
   # single response interactions
@@ -98,7 +92,7 @@ while (True):
   try:
     query = input("Msg: ")
     history.append(Commentator.User, query)
-    res = client.responses.parse(input = systemPrompt + history.getRecent(), model = models["llm"], text_format = formatT)
+    res = client.responses.parse(input = getPreamble(stwm) + history.getRecent(), model = models["llm"], text_format = formatT)
     json = res.output_parsed
 
   except Exception as e:
@@ -111,23 +105,28 @@ while (True):
   if (isinstance(json.ResponseType, String)):
     print("\033[92m" + json.ResponseType.ResponseText + "\033[00m")
     history.append(Commentator.Assistant, json.ResponseType.ResponseText)
+    stwm = json.ResponseType.ShortTermMemory
     respType = ResponseT.Str
 
   if (isinstance(json.ResponseType, WikipediaQuery)):
     feedback = True
-    json = json.ResponseType
+    history.append(Commentator.Developer, "The assistant began a wikipedia lookup.")
     respType = ResponseT.Wikipedia
+
+  if (isinstance(json.ResponseType, MemoryLookup)):
+    feedback = True
+    history.append(Commentator.Developer, "The assistant began a memory lookup.")
+    respType = ResponseT.Memory
+
+  json = json.Response
 
   tries = 0
   msg = ""
   while (feedback and tries < 3):
     msg = ""
     if (respType == ResponseT.Wikipedia):
-      print(json.Article)
       searchResults = wikipedia.search(json.Article)
       if (len(searchResults) == 0):
-        tries += 1
-        client.responses.parse(input)
         formatT = WikipediaQuery
         msg = "The query returned empty. Try again."
       else:
@@ -142,11 +141,29 @@ while (True):
           for para in paras:
             msg += para + "\n"
 
-    res = client.responses.parse(input = systemPrompt + history.getRecent() + [{"role" : "developer", "content" : msg}], model = models["llm"], text_format = formatT)
+    if (respType == ResponseT.Memory):
+      vec = emb_gen.generate(json.LikeText)
+      similar_results = emb_gen.retrieve_similar(vec)
+      if (len(similar_results) == 0):
+        msg = "Try a different search phrase"
+        formatT = MemoryLookup
+      else:
+        msg = "Here are your results:\n" + emb_gen.retrieve_similar(vec)
+        feedback = False
+        formatT = String
+
+    res = client.responses.parse(input = getPreamble(stwm) + history.getRecent() + [{"role" : "developer", "content" : msg}], model = models["llm"], text_format = formatT)
     json = res.output_parsed
     if (formatT == String):
-      print("\033[94m" + json.ResponseText + "\033[00m")
+      print("\033[92m" + json.ResponseText + "\033[00m")
 
-  if (len(msg) != 0):
-    history.append(Commentator.Developer, msg)
+    tries += 1
+
+  if (feedback):
+    history.append(Commentator.Developer, "You were unable to perform the previous action. Try to respond as best as possible to the user or state that you don't have the requisite details.")
+    res = client.responses.parse(input = getPreamble(stwm) + history.getRecent(), text_format=String)
+    json = res.output_parsed
+    stwm = json.ShortTermMemory
+    print("\033[92m" + json.ResponseText + "\033[00m")
+    history.append(Commentator.Assistant, json.ResponseText)
 
