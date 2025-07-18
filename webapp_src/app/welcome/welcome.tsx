@@ -1,10 +1,9 @@
-import logoDark from "./logo-dark.svg";
-import logoLight from "./logo-light.svg";
+import { Button } from '@mantine/core'
 
 export function Welcome() {
   return (
     <main className="flex items-center justify-center pt-16 pb-4">
-      <text>Hello</text>
+      <Button variant="default">press</Button>
     </main>
   );
 }

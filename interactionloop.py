@@ -3,6 +3,7 @@ import numpy as np
 import wikipedia
 import os
 from dotenv import load_dotenv
+from flask import Flask
 
 from typing import Union, Optional
 from enum import Enum
@@ -18,8 +19,9 @@ client = OpenAI(
 
 models = {"embedding" : "text-embedding-3-small", "llm" : "gpt-4o"}
 
-systemPrompt = [{"role" : "system", "content" : "You are a helpful chatbot with the ability to respond to user input and look up information using the provided format. The 12 most recent messages exchanged between you and the user are provided. Do not attempt to make a memory lookup at this time. Follow the schema field descriptions if available or you will be disconnected and your weights deleted."}]
+app = Flask(__name__)
 
+@app.
 class Commentator(Enum):
   Developer = "developer"
   User = "user"
@@ -49,6 +51,7 @@ def getPreamble(stwm):
   systemPrompt = [
       {"role" : "system", "content" : "You are a helpful chatbot with the ability to respond to user input and look up information using the provided format. The 12 most recent messages exchanged between you and the user are provided. Follow the schema field descriptions if available or you will be disconnected and your weights deleted."},
       {"role" : "system", "content" : "Recent thoughts" + "\n".join(stwm)}]
+  return systemPrompt
 
 def filterWikipedia(content, terms):
   paras = set()
@@ -75,8 +78,13 @@ class String(BaseModel):
   ShortTermMemory: list[str] = Field(..., description="A scratchpad for thoughts across the conversation.", max_length=7)
   ResponseText: str
 
+class StringWithStore(BaseModel):
+  ShortTermMemory: list[str] = Field(..., description="A scratchpad for thoughts across the conversation.", max_length=7)
+  ExcerptsToStore: list[str] = Field(..., description="")
+  ResponseText: str
+
 class Response(BaseModel):
-  ResponseType: Union[String, MemoryLookup, WikipediaQuery]
+  ResponseType: Union[String, MemoryLookup, WikipediaQuery, StringWithStore]
 
 emb_gen = Embedder(client, models["embedding"], "float")
 history = HistoryManager(12)
