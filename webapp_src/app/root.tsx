@@ -6,10 +6,12 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
+import React from 'react';
+import { ColorSchemeScript, MantineProvider, mantineHtmlProps, AppShell } from '@mantine/core';
 
 import '@mantine/core/styles.css'
 
+import { Header } from './header'
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -37,7 +39,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <MantineProvider>{children}</MantineProvider>
+        <MantineProvider defaultColorScheme='auto'>
+          <AppShell header={{ height:60 }}>
+            <Header />
+            <AppShell.Main>
+              {children}
+            </AppShell.Main>
+          </AppShell>
+        </MantineProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
