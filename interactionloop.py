@@ -3,13 +3,14 @@ import numpy as np
 import wikipedia
 import os
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, request
 
 from typing import Union, Optional
 from enum import Enum
 from pydantic import BaseModel, Field
 
 import sqliface as sql
+import pydantic_defs as pyd
 
 load_dotenv()
 
@@ -21,7 +22,14 @@ models = {"embedding" : "text-embedding-3-small", "llm" : "gpt-4o"}
 
 app = Flask(__name__)
 
-@app.
+@app.route("/login", methods=["GET", "POST"])
+def handleLogin():
+  if (request.method == "POST" and request.is_json() and request.content_length < 500):
+    datum = request.get_data()
+    regObj = pyd.UserRegistration.model_validate_json(datum)
+
+
+
 class Commentator(Enum):
   Developer = "developer"
   User = "user"
@@ -65,26 +73,6 @@ def filterWikipedia(content, terms):
         paras.add(para)
 
   return paras
-
-class MemoryLookup(BaseModel):
-  LikeText: str
-
-class WikipediaQuery(BaseModel):
-  Article: str
-  returnLinks: bool
-  paragraphSearchTerms: list[str] = Field(..., title="ParagraphSearchTerms", description="Only paragraphs containing one of these phrases will be returned. To get the whole document, leave empty.")
-
-class String(BaseModel):
-  ShortTermMemory: list[str] = Field(..., description="A scratchpad for thoughts across the conversation.", max_length=7)
-  ResponseText: str
-
-class StringWithStore(BaseModel):
-  ShortTermMemory: list[str] = Field(..., description="A scratchpad for thoughts across the conversation.", max_length=7)
-  ExcerptsToStore: list[str] = Field(..., description="")
-  ResponseText: str
-
-class Response(BaseModel):
-  ResponseType: Union[String, MemoryLookup, WikipediaQuery, StringWithStore]
 
 emb_gen = Embedder(client, models["embedding"], "float")
 history = HistoryManager(12)

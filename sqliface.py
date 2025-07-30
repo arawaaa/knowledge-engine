@@ -1,9 +1,12 @@
 from openai import OpenAI
 
 import os
+import hashlib
 import psycopg
 import numpy as np
 from pgvector.psycopg import register_vector
+
+import pydantic_defs as pyd
 
 class Embedder:
   def __init__(self, client: OpenAI, model, encoding_format):
@@ -32,7 +35,7 @@ cursor = conn.cursor()
 def get(vec):
     cursor.execute("""
         select description, (embed <#> %s) * -1 as cosine_score
-        from embeds
+        from records
         where cosine_score > 0.85
         order by cosine_score desc
         limit 6;""", (vec,)) # inner product is cosine distance since |e| = 1
@@ -51,3 +54,8 @@ def put(emb, strings):
         values %s
         """, (valuePairs,))
 
+def userInsert(regObj: pyd.UserRegistration):
+  hashed = hashlib.sha256(regObj.password.encode()).hexdigest()
+  cursor.execute("""
+      insert into logins (username, pwd_hash)
+      values (%s, %s)""", (regObj.user, hashed))
