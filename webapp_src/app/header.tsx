@@ -1,7 +1,7 @@
 import { AppShell, Text, Button, Group, Image, AspectRatio } from "@mantine/core";
 import classes from './header.module.css';
 import { useContext } from 'react';
-import { GlobalCtx } from './root'
+import { GlobalCtx } from './contexts'
 import { useNavigate } from 'react-router'
 
 import logo from "./resources/icon.png";
@@ -11,6 +11,7 @@ export function Header() {
     const navigate = useNavigate()
 
     console.log(globalCtx)
+    console.log("hello")
     function buttonPressed() {
         if (globalCtx?.loggedIn) {
             navigate('/home')

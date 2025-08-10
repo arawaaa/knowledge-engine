@@ -8,6 +8,7 @@ import {
 } from "react-router";
 import React, { useState } from 'react';
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps, AppShell } from '@mantine/core';
+import { GlobalCtx } from "./contexts";
 
 import '@mantine/core/styles.css'
 
@@ -15,14 +16,7 @@ import { Header } from './header'
 import type { Route } from "./+types/root";
 import "./app.css";
 
-type globalState = {
-  loggedIn: boolean;
-  setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
-  token: number | undefined;
-  setToken: React.Dispatch<React.SetStateAction<number | undefined>>;
-} | undefined
 
-export const GlobalCtx = React.createContext<globalState>(undefined)
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -41,7 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [loggedIn, setLoggedIn] = useState<boolean>(false)
   const [token, setToken] = useState<number | undefined>(undefined)
 
-  const state: globalState = {
+  const state = {
     loggedIn: loggedIn,
     setLoggedIn: setLoggedIn,
     token: token,
