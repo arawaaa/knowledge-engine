@@ -6,7 +6,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-import React from 'react';
+import React, { useState } from 'react';
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps, AppShell } from '@mantine/core';
 
 import '@mantine/core/styles.css'
@@ -14,6 +14,15 @@ import '@mantine/core/styles.css'
 import { Header } from './header'
 import type { Route } from "./+types/root";
 import "./app.css";
+
+type globalState = {
+  loggedIn: boolean;
+  setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
+  token: number | undefined;
+  setToken: React.Dispatch<React.SetStateAction<number | undefined>>;
+} | undefined
+
+export const GlobalCtx = React.createContext<globalState>(undefined)
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -29,6 +38,18 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const [loggedIn, setLoggedIn] = useState<boolean>(false)
+  const [token, setToken] = useState<number | undefined>(undefined)
+
+  const state: globalState = {
+    loggedIn: loggedIn,
+    setLoggedIn: setLoggedIn,
+    token: token,
+    setToken: setToken
+  }
+
+  console.log("run")
+
   return (
     <html lang="en" {...mantineHtmlProps}>
       <head>
@@ -39,14 +60,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <MantineProvider defaultColorScheme='auto'>
-          <AppShell header={{ height:60 }}>
-            <Header />
-            <AppShell.Main>
-              {children}
-            </AppShell.Main>
-          </AppShell>
-        </MantineProvider>
+        <GlobalCtx value={state}>
+          <MantineProvider defaultColorScheme='auto'>
+            <AppShell header={{ height:60 }}>
+              <Header />
+              <AppShell.Main>
+                {children}
+              </AppShell.Main>
+            </AppShell>
+          </MantineProvider>
+        </GlobalCtx>
         <ScrollRestoration />
         <Scripts />
       </body>

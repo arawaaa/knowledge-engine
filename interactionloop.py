@@ -27,6 +27,7 @@ def handleLogin():
   if (request.method == "POST" and request.is_json() and request.content_length < 500):
     datum = request.get_data()
     regObj = pyd.UserRegistration.model_validate_json(datum)
+    if (regObj)
 
 
 

@@ -1,19 +1,30 @@
 import { Chip, Group, Button, Text, Stack, Checkbox, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 
+type CreationValues = {
+    name: string;
+    cbotName: string;
+    friendly: boolean;
+    type: Array<string>;
+}
+
+function submitValues(values: CreationValues) {
+
+}
+
 export function CreateBot() {
-    const form = useForm({
+    const form = useForm<CreationValues>({
         mode: "uncontrolled",
         initialValues: {
-        name: '',
-        cbotName: 'Jemma',
-        friendly: true,
-        type: Array<string>()
+            name: '',
+            cbotName: 'Jemma',
+            friendly: true,
+            type: Array<string>()
         }
     })
 
     return (
-        <form onSubmit={form.onSubmit((values) => console.log(values))}>
+        <form onSubmit={form.onSubmit((values) => submitValues(values))}>
             <Stack>
                 <TextInput
                 {...form.getInputProps('name')}
