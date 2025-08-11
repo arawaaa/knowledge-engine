@@ -11,7 +11,6 @@ export function Header() {
     const navigate = useNavigate()
 
     console.log(globalCtx)
-    console.log("hello")
     function buttonPressed() {
         if (globalCtx?.loggedIn) {
             navigate('/home')

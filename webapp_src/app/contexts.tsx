@@ -1,6 +1,6 @@
 import React from 'react';
 
-type globalState = {
+export type globalState = {
   loggedIn: boolean;
   setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
   token: number | undefined;

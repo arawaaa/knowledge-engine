@@ -1,5 +1,9 @@
 import { Chip, Group, Button, Text, Stack, Checkbox, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { useContext, useState } from 'react';
+import { GlobalCtx } from '~/contexts';
+import { Auth } from './auth';
+import type { globalState } from '~/contexts';
 
 type CreationValues = {
     name: string;
@@ -8,11 +12,12 @@ type CreationValues = {
     type: Array<string>;
 }
 
-function submitValues(values: CreationValues) {
+function submitValues(values: CreationValues, ctx: globalState) {
 
 }
 
-export function CreateBot() {
+function BotForm({ moveToLogin } : { moveToLogin: React.Dispatch<React.SetStateAction<boolean>> }) {
+    const ctx = useContext(GlobalCtx)
     const form = useForm<CreationValues>({
         mode: "uncontrolled",
         initialValues: {
@@ -24,7 +29,13 @@ export function CreateBot() {
     })
 
     return (
-        <form onSubmit={form.onSubmit((values) => submitValues(values))}>
+        <form onSubmit={form.onSubmit((values) => {
+            if (ctx?.loggedIn) {
+                submitValues(values, ctx)
+            } else {
+                moveToLogin(true)
+            }
+        })} >
             <Stack>
                 <TextInput
                 {...form.getInputProps('name')}
@@ -56,5 +67,16 @@ export function CreateBot() {
                 </Group>
             </Stack>
         </form>
+    )
+}
+
+export function CreateBot() {
+    const ctx = useContext(GlobalCtx)
+    const [loginShown, setLoginShown] = useState<boolean>(false)
+
+    return (
+        <>
+            {loginShown ? (<Auth />) : (<BotForm moveToLogin={setLoginShown} />)}
+        </>
     )
 }

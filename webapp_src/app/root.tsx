@@ -42,8 +42,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setToken: setToken
   }
 
-  console.log("run")
-
   return (
     <html lang="en" {...mantineHtmlProps}>
       <head>
